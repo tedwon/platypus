@@ -24,7 +24,6 @@ class BookmarkService {
 
     @Transactional
     fun createBookmark(@Valid product: Bookmark): Bookmark {
-        println(product)
         product.persist()
         return product
     }
