@@ -67,10 +67,25 @@ class BookmarkService {
     }
 
     fun search(query: String): List<Bookmark> {
+        // Sanitize and validate input
+        val sanitizedQuery = sanitizeSearchQuery(query)
+        if (!isValidSearchQuery(sanitizedQuery)) {
+            throw ValidationException("Invalid search query")
+        }
+
+        // Use parameterized query with bound parameters
         return Bookmark.list(
-            "lower(name) like lower(?1) or lower(url) like lower(?1) or lower(description) like lower(?1) ORDER BY displayOrder",
-            "%${query}%"
+            "lower(name) like lower(:query) or lower(url) like lower(:query) or lower(description) like lower(:query) ORDER BY displayOrder",
+            mapOf("query" to "%$sanitizedQuery%")
         )
+    }
+
+    private fun sanitizeSearchQuery(query: String): String {
+        return query.replace(Regex("[^a-zA-Z0-9\\s-]"), "")
+    }
+
+    private fun isValidSearchQuery(query: String): Boolean {
+        return query.length in 1..100 && !query.contains(";")
     }
 
     @Transactional
