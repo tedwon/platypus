@@ -1,0 +1,85 @@
+:author:         Ted Won
+:email:          iamtedwon@gmail.com
+:toc:            left
+
+= https://github.com/tedwon/platypus[Platypus]
+
+== Platypus
+
+https://github.com/tedwon/platypus[Platypus] is a full-stack CRUD web app with a React frontend and Java + Kotlin backend using Quarkus and Spring Boot, designed for end-to-end development practice with database integration.
+
+https://github.com/tedwon/platypus
+
+== Platypus Backend
+
+Backend API server based on Quarkus in Kotlin and Java
+
+=== Creating platypus-backend
+
+* Install quarkus CLI via https://quarkus.io/get-started/
+* Create a new quarkus application
+** https://quarkus.io/guides/getting-started#bootstrapping-the-project
+
+[source,bash,options="nowrap"]
+----
+$ quarkus create app --maven --kotlin --java=21 --refresh --verbose \
+    --extension='kotlin,resteasy-reactive,resteasy-reactive-jackson,smallrye-openapi,hibernate-orm,hibernate-orm-panache,hibernate-orm-rest-data-panache,hibernate-orm-panache-kotlin,jdbc-postgresql,rest-client-jackson,cache,hibernate-search-orm-elasticsearch' --package-name=au.platypus.quarkus \
+    platypus:platypus-backend-quarkus:0.1.0-SNAPSHOT
+$ cd platypus-backend
+----
+
+==== Change the default port:
+
+* Modifying the `platypus-backend/src/main/resources/application.properties` file:
+
+[source,bash,options="nowrap"]
+----
+quarkus.http.port=2412
+----
+
+* Visit http://localhost:2412
+
+== Platypus Frontend
+
+Frontend web UI server built with Next.js and https://mui.com/material-ui/getting-started/[Material UI (MUI)] in React, utilizing TypeScript for enhanced type safety and maintainability.
+
+=== Creating platypus-frontend
+
+* Install Node.js as guided in https://nextjs.org/docs/getting-started/installation
+* Create a new Next.js app
+
+[source,bash,options="nowrap"]
+----
+$ npx create-next-app@latest
+----
+
+==== Install packages
+
+[source,bash,options="nowrap"]
+----
+$ cd platypus-frontend
+$ npm install @mui/material @emotion/react @mui/x-data-grid @emotion/styled @mui/icons-material dayjs
+----
+
+==== Change the default port in a Next.js application:
+
+* Modifying the `platypus-frontend/package.json` file:
+
+[source,bash,options="nowrap"]
+----
+"scripts": {
+  "dev": "next dev -p 2612"
+}
+----
+
+==== Run platypus-frontend app in dev mode
+
+* https://nextjs.org/docs/getting-started/installation#run-the-development-server
+
+[source,bash,options="nowrap"]
+----
+cd platypus-frontend
+npm run dev
+----
+
+* Visit http://localhost:2612
