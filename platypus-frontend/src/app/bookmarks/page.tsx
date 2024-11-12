@@ -41,7 +41,7 @@ const initialFormData: BookmarkFormData = {
 };
 
 export default function BookmarkPage() {
-    const [bookmarks, setBookmarks] = useState<Bookmark[]>([]); // https://github.com/tedwon/platypus-upstream/issues/8
+    const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
     const [openDialog, setOpenDialog] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [bookmarkToDelete, setBookmarkToDelete] = useState<number | null>(null);
