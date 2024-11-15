@@ -10,11 +10,15 @@
 #
 # Then, build the image with:
 #
+# podman build -f src/main/docker/Dockerfile.native-micro -t quarkus/platypus-backend-quarkus .
+# alias docker="podman"
 # docker build -f src/main/docker/Dockerfile.native-micro -t quarkus/platypus-backend-quarkus .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 quarkus/platypus-backend-quarkus
+# podman run -i --rm -p 2412:2412 quarkus/platypus-backend-quarkus
+# alias docker="podman"
+# docker run -i --rm -p 2412:2412 quarkus/platypus-backend-quarkus
 #
 ###
 FROM quay.io/quarkus/quarkus-micro-image:2.0
@@ -24,7 +28,7 @@ RUN chown 1001 /work \
     && chown 1001:root /work
 COPY --chown=1001:root target/*-runner /work/application
 
-EXPOSE 8080
+EXPOSE 2412
 USER 1001
 
 ENTRYPOINT ["./application", "-Dquarkus.http.host=0.0.0.0"]
