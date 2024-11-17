@@ -1,0 +1,98 @@
+= Building a Native Executable - Quarkus
+
+https://quarkus.io/guides/building-native-image
+
+
+== Creating a Linux executable without GraalVM installed
+
+https://quarkus.io/guides/building-native-image#container-runtime
+
+[source,bash,options="nowrap"]
+----
+quarkus build --native -Dquarkus.native.container-build=true -Dquarkus.native.container-runtime=podman -Dquarkus.native.native-image-xmx=4g
+----
+
+
+== Creating a container using the micro base image
+
+https://quarkus.io/guides/building-native-image#manually-using-the-micro-base-image
+
+[source,bash,options="nowrap"]
+----
+podman build -f src/main/docker/Dockerfile.native-micro -t quarkus/platypus-backend-quarkus .
+----
+
+
+== Run PostgreSQL & Quarkus
+
+=== Ensure Both Containers Are on the Same Network
+
+[source,bash,options="nowrap"]
+----
+podman network ls
+
+podman network create platypus-network
+----
+
+=== Create a PostgreSQL v16 Podman container
+
+[source,bash,options="nowrap"]
+----
+mkdir -p /Users/jwon/pgdata/platypus
+chmod 777 /Users/jwon/pgdata/platypus
+
+# rm -rf /Users/jwon/pgdata/platypus/*
+# podman rm -f platypus-postgres
+podman run -d \
+  --name platypus-postgres \
+  -p 5432:5432 \
+  -e POSTGRES_USER=platypus \
+  -e POSTGRES_PASSWORD=platypus \
+  -e POSTGRES_DB=platypus_db \
+  -v /Users/jwon/pgdata/platypus:/var/lib/postgresql/data:Z \
+  docker.io/postgres:16
+
+podman network connect platypus-network platypus-postgres
+podman restart platypus-postgres
+----
+
+The :Z at the end of the volume path ensures correct SELinux context labeling, which might be enforced in the VM.
+
+
+=== Run the Quarkus container
+
+[source,bash,options="nowrap"]
+----
+podman run -d \
+  --name platypus-backend \
+  -p 2412:2412 \
+  -e QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://platypus-postgres:5432/platypus_db \
+  -e QUARKUS_DATASOURCE_USERNAME=platypus \
+  -e QUARKUS_DATASOURCE_PASSWORD=platypus \
+  quarkus/platypus-backend-quarkus
+
+podman network connect platypus-network platypus-backend
+podman restart platypus-backend
+----
+
+== Run Platypus container & Connect to local PostgreSQL
+
+When using PostgreSQL in local instance.
+
+To Show All Interfaces with IPs in a Cleaner Way and filters out 127.0.0.1 (localhost) and shows only external IP addresses.
+
+[source,bash,options="nowrap"]
+----
+$ ifconfig | grep "inet " | grep -v 127.0.0.1
+
+inet 192.168.4.35 netmask 0xfffffc00 broadcast 192.168.7.255
+----
+
+[source,bash,options="nowrap"]
+----
+podman run --add-host=host.docker.internal:192.168.4.35 \
+    -e QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://host.docker.internal:5445/platypus_db \
+    -p 2412:2412 quarkus/platypus-backend-quarkus
+----
+
+
