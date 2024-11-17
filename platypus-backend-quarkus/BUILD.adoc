@@ -23,9 +23,9 @@ podman build -f src/main/docker/Dockerfile.native-micro -t quarkus/platypus-back
 ----
 
 
-== Run PostgreSQL & Quarkus
+== Run PostgreSQL & Quarkus on Podman
 
-=== Ensure Both Containers Are on the Same Network
+=== Ensure Both Containers Are on the Same Network on Podman
 
 [source,bash,options="nowrap"]
 ----
