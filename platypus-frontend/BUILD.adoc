@@ -1,0 +1,53 @@
+== Building a container image for a Next.js application using Podman
+
+[source,bash,options="nowrap"]
+----
+cd platypus-frontend
+
+podman build -t platypus-frontend-nextjs-app .
+
+podman run -d \
+  --name platypus-frontend-nextjs-app \
+  -p 2611:2611 platypus-frontend-nextjs-app
+----
+
+
+=== Pushing a local container image to a container registry like Docker Hub or Red Hat Quay.io
+
+==== Using Docker Hub
+
+* https://hub.docker.com/r/tedwon/platypus-frontend-nextjs-app
+** https://hub.docker.com/repository/docker/tedwon/platypus-frontend-nextjs-app
+
+[source,bash,options="nowrap"]
+----
+podman login docker.io
+
+podman tag platypus-frontend-nextjs-app docker.io/tedwon/platypus-frontend-nextjs-app:latest
+
+podman push docker.io/tedwon/platypus-frontend-nextjs-app:latest
+
+podman run -d \
+  --name dockerhub-platypus-frontend-nextjs-app \
+  -p 2612:2612 tedwon/platypus-frontend-nextjs-app
+----
+
+
+==== Using Red Hat Quay.io
+
+* https://quay.io/repository/jwon/platypus-frontend-nextjs-app
+
+[source,bash,options="nowrap"]
+----
+podman login quay.io
+
+podman tag platypus-frontend-nextjs-app quay.io/jwon/platypus-frontend-nextjs-app:latest
+
+podman push quay.io/jwon/platypus-frontend-nextjs-app:latest
+
+podman pull quay.io/jwon/platypus-frontend-nextjs-app:latest
+
+podman run -d \
+  --name quayio-platypus-frontend-nextjs-app \
+  -p 2612:2612 quay.io/jwon/platypus-frontend-nextjs-app:latest
+----

@@ -63,6 +63,8 @@ The :Z at the end of the volume path ensures correct SELinux context labeling, w
 
 [source,bash,options="nowrap"]
 ----
+# podman stop platypus-backend
+# podman rm -f platypus-backend
 podman run -d \
   --name platypus-backend \
   -p 2412:2412 \
@@ -73,6 +75,7 @@ podman run -d \
 
 podman network connect platypus-network platypus-backend
 podman restart platypus-backend
+podman logs -f platypus-backend
 ----
 
 == Run Platypus container & Connect to local PostgreSQL
@@ -94,5 +97,3 @@ podman run --add-host=host.docker.internal:192.168.4.35 \
     -e QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://host.docker.internal:5445/platypus_db \
     -p 2412:2412 quarkus/platypus-backend-quarkus
 ----
-
-
