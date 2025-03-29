@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  postgres:
+    image: docker.io/postgres:16
+    container_name: platypus-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: platypus
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-platypus}
+      POSTGRES_DB: platypus_db
+    volumes:
+      - /Users/jwon/pgdata/platypus:/var/lib/postgresql/data:Z
+    networks:
+      - platypus-network
+
+  backend:
+    image: quay.io/jwon/platypus-backend-quarkus-app:latest
+    container_name: quayio-jwon-platypus-backend-quarkus-app
+    ports:
+      - "2412:2412"
+    environment:
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/platypus_db
+      QUARKUS_DATASOURCE_USERNAME: platypus
+      QUARKUS_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-platypus}
+    networks:
+      - platypus-network
+
+  frontend:
+    image: quay.io/jwon/platypus-frontend-nextjs-app:latest
+    container_name: quayio-jwon-platypus-frontend-nextjs-app
+    ports:
+      - "2612:2612"
+    networks:
+      - platypus-network
+
+networks:
+  platypus-network:
+    driver: bridge
