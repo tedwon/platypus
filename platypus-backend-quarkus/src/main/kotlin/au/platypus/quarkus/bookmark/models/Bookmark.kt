@@ -12,6 +12,8 @@ import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import org.hibernate.annotations.*
 import org.hibernate.annotations.Cache
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 /**
@@ -26,7 +28,8 @@ import java.time.Instant
     indexes = [
         Index(name = "idx_bookmark_name", columnList = "name"),
         Index(name = "idx_bookmark_url", columnList = "url")
-    ]
+    ],
+    uniqueConstraints = [UniqueConstraint(columnNames = ["display_order"])] // Add unique constraint
 )
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE) // Hibernate second-level cache applied
 @JsonIdentityInfo(
@@ -36,6 +39,7 @@ import java.time.Instant
 class Bookmark : PanacheEntity() {
 
     companion object : PanacheCompanion<Bookmark> {
+        private val logger: Logger = LoggerFactory.getLogger(Bookmark::class.java)
 
         /**
          * Search by a specific field (single result)
@@ -44,7 +48,12 @@ class Bookmark : PanacheEntity() {
          * @return Bookmark object or null
          */
         fun findByField(fieldName: String, value: Any): Bookmark? =
-            find("$fieldName", value).firstResult()
+            try {
+                find("$fieldName", value).firstResult()
+            } catch (e: Exception) {
+                logger.error("Error finding by field: $fieldName", e)
+                null
+            }
 
         /**
          * Search by a specific field using LIKE (case-insensitive)
@@ -53,7 +62,12 @@ class Bookmark : PanacheEntity() {
          * @return List of matching Bookmarks
          */
         fun listByFieldLike(fieldName: String, value: String) =
-            list("$fieldName LIKE :value", mapOf("value" to "%${value.lowercase()}%"))
+            try {
+                list("LOWER($fieldName) LIKE :value", mapOf("value" to "%${value.lowercase()}%"))
+            } catch (e: Exception) {
+                logger.error("Error listing by field like: $fieldName", e)
+                emptyList()
+            }
 
         // Name search methods
         fun findByName(name: String) = findByField("name", name)
@@ -85,6 +99,7 @@ class Bookmark : PanacheEntity() {
     @Column(nullable = false, unique = true, length = 500)
     @field:NotBlank(message = "URL cannot be blank")
     @field:Pattern(
+        // Use a more robust regex if needed
         regexp = "^(https?|ftp)://[a-zA-Z0-9.-]+(?:\\.[a-zA-Z]{2,6})?(:\\d{1,5})?(?:/.*)?$",
         message = "Invalid URL format"
     )
@@ -139,7 +154,16 @@ class Bookmark : PanacheEntity() {
      * Converts object information to a string (for debugging/logging)
      */
     override fun toString(): String {
-        return "Bookmark(id=$id, name='$name', url='$url', displayOrder=$displayOrder, description='$description', createdAt=$createdAt, updatedAt=$updatedAt)"
+        return StringBuilder("Bookmark(")
+            .append("id=").append(id)
+            .append(", name='").append(name).append('\'')
+            .append(", url='").append(url).append('\'')
+            .append(", displayOrder=").append(displayOrder)
+            .append(", description='").append(description).append('\'')
+            .append(", createdAt=").append(createdAt)
+            .append(", updatedAt=").append(updatedAt)
+            .append(')')
+            .toString()
     }
 
     /**
