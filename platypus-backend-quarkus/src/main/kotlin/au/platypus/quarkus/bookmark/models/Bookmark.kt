@@ -5,10 +5,21 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheCompanion
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
 import jakarta.persistence.*
+import jakarta.persistence.Index
+import jakarta.persistence.Table
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
+import org.hibernate.annotations.*
+import org.hibernate.annotations.Cache
+import java.time.Instant
 
+/**
+ * Bookmark entity (stores bookmark data)
+ * - Mapped to a table using Quarkus + Hibernate ORM
+ * - ID is automatically managed by extending PanacheEntity
+ * - Hibernate second-level cache applied
+ */
 @Entity
 @Table(
     name = "bookmarks",
@@ -17,54 +28,132 @@ import jakarta.validation.constraints.Size
         Index(name = "idx_bookmark_url", columnList = "url")
     ]
 )
-@Cacheable
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE) // Hibernate second-level cache applied
 @JsonIdentityInfo(
     generator = ObjectIdGenerators.PropertyGenerator::class,
     property = "id"
 )
 class Bookmark : PanacheEntity() {
-    companion object : PanacheCompanion<Bookmark> {
-        // Search by name
-        fun findByName(name: String) = find("name", name).firstResult()
-        fun listByName(name: String) = list("name", name)
-        fun listByNameLike(name: String) = list("name like ?1", "%$name%")
 
-        // Search by url
-        fun findByUrl(url: String) = find("url", url).firstResult()
+    companion object : PanacheCompanion<Bookmark> {
+
+        /**
+         * Search by a specific field (single result)
+         * @param fieldName The name of the field to search
+         * @param value The value to search for
+         * @return Bookmark object or null
+         */
+        fun findByField(fieldName: String, value: Any): Bookmark? =
+            find("$fieldName", value).firstResult()
+
+        /**
+         * Search by a specific field using LIKE (case-insensitive)
+         * @param fieldName The name of the field to search
+         * @param value The value to search for
+         * @return List of matching Bookmarks
+         */
+        fun listByFieldLike(fieldName: String, value: String) =
+            list("$fieldName LIKE :value", mapOf("value" to "%${value.lowercase()}%"))
+
+        // Name search methods
+        fun findByName(name: String) = findByField("name", name)
+        fun listByName(name: String) = list("name", name)
+        fun listByNameLike(name: String) = listByFieldLike("name", name)
+
+        // URL search methods
+        fun findByUrl(url: String) = findByField("url", url)
         fun listByUrl(url: String) = list("url", url)
-        fun listByUrlLike(url: String) = list("url like ?1", "%$url%")
+        fun listByUrlLike(url: String) = listByFieldLike("url", url)
     }
 
-    @Column(unique = false, nullable = false, length = 100)
+    /**
+     * Bookmark name (unique value)
+     * - @NaturalId: Used by Hibernate for performance optimization
+     * - @NotBlank: Empty values are not allowed
+     * - @Size: Limited to 1-100 characters
+     */
+    @NaturalId
+    @Column(nullable = false, unique = true, length = 100)
     @field:NotBlank(message = "Name cannot be blank")
     @field:Size(min = 1, max = 100, message = "Name must be between 1 and 100 characters")
-    lateinit var name: String
+    var name: String = ""
 
-    @Column(unique = false, nullable = false, length = 500)
+    /**
+     * Bookmark URL (unique value)
+     * - @Pattern: Validation using regular expressions
+     */
+    @Column(nullable = false, unique = true, length = 500)
     @field:NotBlank(message = "URL cannot be blank")
     @field:Pattern(
-        regexp = "^(https?://)?([\\da-z.-]+)\\.([a-z.]{2,6})[/\\w .-]*/?$",
+        regexp = "^(https?|ftp)://[a-zA-Z0-9.-]+(?:\\.[a-zA-Z]{2,6})?(:\\d{1,5})?(?:/.*)?$",
         message = "Invalid URL format"
     )
-    lateinit var url: String
+    var url: String = ""
 
+    /**
+     * Display order
+     * - Default value: 0
+     */
     @Column(name = "display_order")
     var displayOrder: Int = 0
 
+    /**
+     * Bookmark description (max 1000 characters)
+     */
     @Column(length = 1000)
     @field:Size(max = 1000, message = "Description cannot exceed 1000 characters")
     var description: String = ""
 
+    /**
+     * Creation time (automatically set)
+     */
+    @CreationTimestamp
+    @Column(updatable = false)
+    lateinit var createdAt: Instant
+
+    /**
+     * Update time (automatically updated)
+     */
+    @UpdateTimestamp
+    lateinit var updatedAt: Instant
+
+    /**
+     * Method automatically executed before saving data
+     */
+    @PrePersist
+    fun prePersist() {
+        name = name.trim()
+        url = url.trim()
+    }
+
+    /**
+     * Method automatically executed before updating data
+     */
+    @PreUpdate
+    fun preUpdate() {
+        name = name.trim()
+        url = url.trim()
+    }
+
+    /**
+     * Converts object information to a string (for debugging/logging)
+     */
     override fun toString(): String {
-        return "Bookmark(id=$id, name='$name', url='$url', displayOrder=$displayOrder)"
+        return "Bookmark(id=$id, name='$name', url='$url', displayOrder=$displayOrder, description='$description', createdAt=$createdAt, updatedAt=$updatedAt)"
     }
 
+    /**
+     * Compares object equality
+     * - Considers objects equal if their IDs are the same
+     */
     override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Bookmark) return false
-        return id == other.id
+        return this === other || (other is Bookmark && id == other.id)
     }
 
+    /**
+     * Returns the object's hash code
+     * - Generated based on the ID
+     */
     override fun hashCode(): Int {
         return id?.hashCode() ?: 0
     }
