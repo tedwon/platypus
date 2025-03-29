@@ -28,8 +28,7 @@ import java.time.Instant
     indexes = [
         Index(name = "idx_bookmark_name", columnList = "name"),
         Index(name = "idx_bookmark_url", columnList = "url")
-    ],
-    uniqueConstraints = [UniqueConstraint(columnNames = ["display_order"])] // Add unique constraint
+    ]
 )
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE) // Hibernate second-level cache applied
 @JsonIdentityInfo(
