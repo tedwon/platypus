@@ -1,0 +1,62 @@
+== Run by podman-compose
+
+[source,bash,options="nowrap"]
+----
+# Backend
+cd ~/platypus/platypus-backend-quarkus
+# Creating a Linux executable without GraalVM installed
+# https://quarkus.io/guides/building-native-image#container-runtime
+# Build without running tests
+quarkus build --native -Dquarkus.native.container-build=true -Dquarkus.native.container-runtime=podman -Dquarkus.native.native-image-xmx=4g -DskipTests=true
+
+# Creating a container using the micro base image
+# https://quarkus.io/guides/building-native-image#manually-using-the-micro-base-image
+podman build -f src/main/docker/Dockerfile.native-micro -t quarkus/platypus-backend-app .
+podman tag quarkus/platypus-backend-app quay.io/jwon/platypus-backend-quarkus-app:latest
+
+podman login quay.io
+podman push quay.io/jwon/platypus-backend-quarkus-app:latest
+
+
+# Frontend
+cd ~/platypus/platypus-frontend
+podman build -t platypus-frontend-nextjs-app .
+podman tag platypus-frontend-nextjs-app quay.io/jwon/platypus-frontend-nextjs-app:latest
+podman login quay.io
+podman push quay.io/jwon/platypus-frontend-nextjs-app:latest
+
+# Run platypus
+cd ~/platypus/
+podman-compose up -d
+----
+
+
+== Run by podman
+
+[source,bash,options="nowrap"]
+----
+podman run -d \
+  --name platypus-postgres \
+  -p 5432:5432 \
+  -e POSTGRES_USER=platypus \
+  -e POSTGRES_PASSWORD=platypus \
+  -e POSTGRES_DB=platypus_db \
+  -v /Users/jwon/pgdata/platypus:/var/lib/postgresql/data:Z \
+  docker.io/postgres:16
+podman network connect platypus-network platypus-postgres
+
+podman run -d \
+  --name platypus-backend \
+  -p 2412:2412 \
+  -e QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://platypus-postgres:5432/platypus_db \
+  -e QUARKUS_DATASOURCE_USERNAME=platypus \
+  -e QUARKUS_DATASOURCE_PASSWORD=platypus \
+  quay.io/jwon/platypus-backend-quarkus-app:latest
+podman network connect platypus-network platypus-backend
+
+podman run -d \
+  --name platypus-frontend \
+  --network platypus-network \
+  -p 2612:2612 \
+  quay.io/jwon/platypus-frontend-nextjs-app:latest
+----
