@@ -30,7 +30,9 @@ class BookmarkResource @Inject constructor(
 
     @POST
     fun createBookmark(@Valid product: Bookmark): Response {
+        LOGGER.infof("Creating bookmark: %s", product)
         val createdBookmark = service.createBookmark(product)
+        LOGGER.infof("Bookmark created with ID: %d", createdBookmark.id)
         return Response.status(Response.Status.CREATED).entity(createdBookmark).build()
     }
 
