@@ -12,6 +12,10 @@ import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.ext.ExceptionMapper
 import jakarta.ws.rs.ext.Provider
+import org.eclipse.microprofile.openapi.annotations.Operation
+import org.eclipse.microprofile.openapi.annotations.media.Content
+import org.eclipse.microprofile.openapi.annotations.media.Schema
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
 import org.jboss.logging.Logger
 
 /**
@@ -29,6 +33,9 @@ class BookmarkResource @Inject constructor(
     }
 
     @POST
+    @Operation(summary = "Create a new bookmark", description = "Adds a bookmark to the system")
+    @APIResponse(responseCode = "201", description = "Bookmark created", content = [Content(schema = Schema(implementation = Bookmark::class))])
+    @APIResponse(responseCode = "400", description = "Invalid bookmark data")
     fun createBookmark(@Valid product: Bookmark): Response {
         LOGGER.infof("Creating bookmark: %s", product)
         val createdBookmark = service.createBookmark(product)
