@@ -20,7 +20,7 @@ import org.jboss.logging.Logger
 @Path("/platypus/api/v1/bookmarks")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-class BookmarkResource(
+class BookmarkResource @Inject constructor(
     private val service: BookmarkService
 ) {
 
