@@ -1,13 +1,20 @@
 package au.platypus.quarkus.bookmark.services
 
 import au.platypus.quarkus.bookmark.models.Bookmark
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.quarkus.runtime.StartupEvent
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.event.Observes
+import jakarta.inject.Inject
+import jakarta.persistence.PersistenceException
 import jakarta.transaction.Transactional
 import jakarta.validation.Valid
 import jakarta.validation.ValidationException
 import jakarta.ws.rs.NotFoundException
+import jakarta.ws.rs.WebApplicationException
+import jakarta.ws.rs.core.Response
+import jakarta.ws.rs.ext.ExceptionMapper
+import jakarta.ws.rs.ext.Provider
 import org.jboss.logging.Logger
 import java.util.*
 
@@ -23,9 +30,14 @@ class BookmarkService {
     }
 
     @Transactional
-    fun createBookmark(@Valid product: Bookmark): Bookmark {
-        product.persist()
-        return product
+    fun createBookmark(@Valid bookmark: Bookmark): Bookmark {
+        try {
+            bookmark.persist()
+            return bookmark
+        } catch (e: PersistenceException) {
+            LOGGER.error("Error creating bookmark", e)
+            throw BookmarkServiceException("Failed to create bookmark: ${e.message}", e)
+        }
     }
 
     fun getBookmarkById(id: Long): Bookmark? {
@@ -115,5 +127,31 @@ class BookmarkService {
 
         bookmark.displayOrder = newIndex
         return bookmark
+    }
+
+    // Custom Exception
+    class BookmarkServiceException(message: String, cause: Throwable) : RuntimeException(message, cause)
+
+    @Provider
+    class ErrorMapper : ExceptionMapper<Exception> {
+
+        @Inject
+        lateinit var objectMapper: ObjectMapper
+
+        override fun toResponse(exception: Exception): Response {
+            LOGGER.error("Failed to handle request", exception)
+            var code = when (exception) {
+                is WebApplicationException -> exception.response.status
+                is BookmarkServiceException -> 500 // Or a more specific code if appropriate
+                else -> 500
+            }
+            val exceptionJson = objectMapper.createObjectNode()
+            exceptionJson.put("exceptionType", exception.javaClass.name)
+            exceptionJson.put("code", code)
+            exceptionJson.put("error", exception.message ?: "Internal Server Error") // Provide a default message
+            return Response.status(code)
+                .entity(exceptionJson)
+                .build()
+        }
     }
 }
